@@ -1,0 +1,30 @@
+{
+  "canisters": {
+    "hotel_management_backend": {
+      "candid": "src/hotel_management_backend/hotel_management_backend.did",
+      "package": "hotel_management_backend",
+      "type": "rust"
+    },
+    "hotel_management_frontend": {
+      "dependencies": [
+        "hotel_management_backend"
+      ],
+      "frontend": {
+        "entrypoint": "src/hotel_management_frontend/src/index.html"
+      },
+      "source": [
+        "src/hotel_management_frontend/assets",
+        "dist/hotel_management_frontend/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
