@@ -13,8 +13,10 @@
     "prebuild": "dfx generate",
     "start": "webpack serve --mode development --env development",
     "deploy:local": "dfx deploy --network=local",
-    "deploy:ic": "dfx deploy --network=ic",
-    "generate": "dfx generate hotel_management_backend"
+    "deploy:ic": "dfx deploy --network=ic",    
+    "generate": "./did.sh && dfx generate",
+    "gen-deploy":"./did.sh && dfx generate && dfx deploy -y"
+    
   },
   "dependencies": {
     "@dfinity/agent": "^0.20.0",
