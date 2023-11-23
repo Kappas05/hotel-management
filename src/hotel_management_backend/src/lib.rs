@@ -1,17 +1,20 @@
+// Imorting necessary libraries
 #[macro_use]
 extern crate serde;
 use candid::{Decode, Encode};
 use ic_cdk::api::time;
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::{BoundedStorable, Cell, DefaultMemoryImpl, StableBTreeMap, Storable};
-use std::{borrow::Cow, cell::RefCell,collections::HashMap};
+use std::{borrow::Cow, cell::RefCell};
 
+// Define struct and types
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 type IdCell = Cell<u64, Memory>;
 
 
 // ... [dependencies and imports similar to your original code] ...
 
+// Define the Room Structure
 #[derive(candid::CandidType, Clone, Serialize, Deserialize, Default)]
 struct Room {
     id: u64,
@@ -22,6 +25,7 @@ struct Room {
     updated_at: Option<u64>,
 }
 
+// Implement Storable and BoundedStorable for Room...
 
 impl Storable for Room {
     fn to_bytes(&self) -> Cow<[u8]> {
@@ -39,8 +43,7 @@ impl BoundedStorable for Room {
 }
 
 
-// Implement Storable and BoundedStorable for Room...
-
+// Define the Reservation Structure
 #[derive(candid::CandidType, Clone, Serialize, Deserialize, Default)]
 struct Reservation {
     id: u64,
@@ -68,7 +71,7 @@ impl BoundedStorable for Reservation {
     const IS_FIXED_SIZE: bool = false;
 }
 
-
+// Define the Guest Structure
 #[derive(candid::CandidType, Clone, Serialize, Deserialize, Default)]
 struct Guest {
     id: u64,
@@ -94,14 +97,18 @@ impl BoundedStorable for Guest {
 }
 
 
+
+
 // Define `RoomPayload`, `ReservationPayload`, `GuestPayload` for CRUD operations
-
 // Initialize memory storage for Room, Reservation, and Guest similar to the original code
-
 // Define CRUD operations for each entity (Room, Reservation, Guest)
 // Following the pattern of your original CRUD operations, adjust them to handle the new entities
 
+
+
 // ... [rest of the code with adapted CRUD operations and relevant query/update methods] ...
+
+// Define Memory manager and the ID counter 
 thread_local! {
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
         MemoryManager::init(DefaultMemoryImpl::default())
@@ -131,6 +138,16 @@ thread_local! {
     );
 }
 
+// Define the RoomPayload structure for creating and Updating rooms 
+#[derive(candid::CandidType, Serialize, Deserialize, Default)]
+struct RoomPayload {
+    room_number: String,
+    room_type: String,
+    availability: bool,
+}
+
+
+// Function to create a room
 #[ic_cdk::update]
 fn create_room(payload: RoomPayload) -> Option<Room> {
     let id = generate_new_id();
@@ -145,6 +162,8 @@ fn create_room(payload: RoomPayload) -> Option<Room> {
     ROOM_STORAGE.with(|s| s.borrow_mut().insert(id, room.clone()));
     Some(room)
 }
+
+// Function that check the number of available rooms 
 fn available_rooms_count(room_type: &str) -> u64 {
     ROOM_STORAGE.with(|rooms| {
         rooms.borrow().iter()
@@ -153,6 +172,8 @@ fn available_rooms_count(room_type: &str) -> u64 {
     })
 }
 
+
+// Function to get a single room by ID
 #[ic_cdk::query]
 fn get_room(id: u64) -> Result<Room, Error> {
     ROOM_STORAGE.with(|s| s.borrow().get(&id))
@@ -160,6 +181,8 @@ fn get_room(id: u64) -> Result<Room, Error> {
             msg: format!("Room with id={} not found.", id),
         })
 }
+
+// Function to update room
 #[ic_cdk::update]
 fn update_room(id: u64, payload: RoomPayload) -> Result<Room, Error> {
     ROOM_STORAGE.with(|s| {
@@ -178,6 +201,7 @@ fn update_room(id: u64, payload: RoomPayload) -> Result<Room, Error> {
     })
 }
 
+// Function to delete room by Id
 #[ic_cdk::update]
 fn delete_room(id: u64) -> Result<Room, Error> {
     ROOM_STORAGE.with(|s| s.borrow_mut().remove(&id))
@@ -185,6 +209,8 @@ fn delete_room(id: u64) -> Result<Room, Error> {
             msg: format!("Room with id={} not found.", id),
         })
 }
+
+// Define the ReservationPayload structure for creating and updating Reservation
 #[derive(candid::CandidType, Serialize, Deserialize, Default)]
 struct ReservationPayload {
     guest_id: u64,
@@ -193,6 +219,7 @@ struct ReservationPayload {
     end_date: u64,
 }
 
+// Function to create a new Reservation 
 #[ic_cdk::update]
 fn create_reservation(payload: ReservationPayload) -> Result<Reservation, Error> {
     // Validate Date Range
@@ -253,6 +280,8 @@ fn create_reservation(payload: ReservationPayload) -> Result<Reservation, Error>
     Ok(reservation)
 }
 
+
+// Function to get a reservation by Id
 #[ic_cdk::query]
 fn get_reservation(id: u64) -> Result<Reservation, Error> {
     RESERVATION_STORAGE.with(|s| s.borrow().get(&id))
@@ -261,6 +290,8 @@ fn get_reservation(id: u64) -> Result<Reservation, Error> {
         })
 }
 
+
+// Function to update the room_availability
 #[ic_cdk::update]
 fn update_room_availability(room_id: u64, is_available: bool) -> Result<(), Error> {
     ROOM_STORAGE.with(|rooms| {
@@ -275,6 +306,8 @@ fn update_room_availability(room_id: u64, is_available: bool) -> Result<(), Erro
         }
     })
 }
+
+// Function to delete reservation by id
 #[ic_cdk::update]
 fn delete_reservation(id: u64) -> Result<Reservation, Error> {
     // Retrieve the reservation to delete
@@ -294,22 +327,23 @@ fn delete_reservation(id: u64) -> Result<Reservation, Error> {
     }
 }
 
+// Define a GuestPayload structure for creating/updating Guests
+#[derive(candid::CandidType, Serialize, Deserialize, Default)]
+struct GuestPayload {
+    name: String,
+    email: String,
+}
 
-
-
+// Function to generate a new id 
 fn generate_new_id() -> u64 {
     ID_COUNTER.with(|counter| {
         let current_value = *counter.borrow().get();
-        counter.borrow_mut().set(current_value + 1);
+        let _ = counter.borrow_mut().set(current_value + 1);
         current_value
     })
 }
-#[derive(candid::CandidType, Serialize, Deserialize, Default)]
-struct RoomPayload {
-    room_number: String,
-    room_type: String,
-    availability: bool,
-}
+
+// Function to create a guest 
 #[ic_cdk::update]
 fn create_guest(payload: GuestPayload) -> Option<Guest> {
     let id = generate_new_id();
@@ -323,6 +357,8 @@ fn create_guest(payload: GuestPayload) -> Option<Guest> {
     GUEST_STORAGE.with(|s| s.borrow_mut().insert(id, guest.clone()));
     Some(guest)
 }
+
+// Function to get guest by id
 #[ic_cdk::query]
 fn get_guest(id: u64) -> Result<Guest, Error> {
     GUEST_STORAGE.with(|s| s.borrow().get(&id))
@@ -330,6 +366,26 @@ fn get_guest(id: u64) -> Result<Guest, Error> {
             msg: format!("Guest with id={} not found.", id),
         })
 }
+
+// Get all guests 
+#[ic_cdk::query]
+fn get_all_guests() -> Result<Vec<Guest>, Error>{
+    let guests_map: Vec<(u64,Guest)> = GUEST_STORAGE.with(|service| service.borrow().iter().collect());
+    let guests: Vec<Guest> = guests_map.into_iter().map(|(_, task)|task).collect();
+
+    if !guests.is_empty() {
+        Ok(guests)
+    } else {
+        Err(Error::NotFound {
+            msg: "No tasks found.".to_string(),
+         })
+    }
+}
+
+
+
+
+// Function to update the guest details
 #[ic_cdk::update]
 fn update_guest(id: u64, payload: GuestPayload) -> Result<Guest, Error> {
     GUEST_STORAGE.with(|s| {
@@ -346,6 +402,8 @@ fn update_guest(id: u64, payload: GuestPayload) -> Result<Guest, Error> {
         }
     })
 }
+
+// Function to delete a guest 
 #[ic_cdk::update]
 fn delete_guest(id: u64) -> Result<Guest, Error> {
     GUEST_STORAGE.with(|s| s.borrow_mut().remove(&id))
@@ -353,13 +411,8 @@ fn delete_guest(id: u64) -> Result<Guest, Error> {
             msg: format!("Guest with id={} not found.", id),
         })
 }
-#[derive(candid::CandidType, Serialize, Deserialize, Default)]
-struct GuestPayload {
-    name: String,
-    email: String,
-}
 
-
+// Define the error enum for handling errors
 #[derive(candid::CandidType, Deserialize, Serialize)]
 enum Error {
     NotFound { msg: String },
@@ -368,4 +421,6 @@ enum Error {
     Overbooking { msg: String },
 }
 
+
+// Export candid interface
 ic_cdk::export_candid!();

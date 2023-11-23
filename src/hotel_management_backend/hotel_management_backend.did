@@ -28,7 +28,8 @@ type ReservationPayload = record {
 type Result = variant { Ok : Reservation; Err : Error };
 type Result_1 = variant { Ok : Guest; Err : Error };
 type Result_2 = variant { Ok : Room; Err : Error };
-type Result_3 = variant { Ok; Err : Error };
+type Result_3 = variant { Ok : vec Guest; Err : Error };
+type Result_4 = variant { Ok; Err : Error };
 type Room = record {
   id : nat64;
   updated_at : opt nat64;
@@ -49,10 +50,11 @@ service : {
   delete_guest : (nat64) -> (Result_1);
   delete_reservation : (nat64) -> (Result);
   delete_room : (nat64) -> (Result_2);
+  get_all_guests : () -> (Result_3) query;
   get_guest : (nat64) -> (Result_1) query;
   get_reservation : (nat64) -> (Result) query;
   get_room : (nat64) -> (Result_2) query;
   update_guest : (nat64, GuestPayload) -> (Result_1);
   update_room : (nat64, RoomPayload) -> (Result_2);
-  update_room_availability : (nat64, bool) -> (Result_3);
+  update_room_availability : (nat64, bool) -> (Result_4);
 }

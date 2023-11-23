@@ -1,4 +1,4 @@
-# hotel_management
+# Hotel Management System using Internet Computer(IC)
 
 Welcome to your new hotel_management project and to the internet computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
 
@@ -48,6 +48,73 @@ If you are making frontend changes, you can start a development server with
 ```bash
 npm start
 ```
+
+
+# Explanation of each function in  hotel-management
+
+## Room Functions
+
+`create_room(payload: RoomPayload) -> Option<Room>`
+
+Creates a new room using the provided payload and adds it to the room storage. It returns the created room if successful.
+
+`available_rooms_count(room_type: &str) -> u64`
+
+Counts the number of available rooms for a given room 
+type.
+
+`get_room(id: u64) -> Result<Room, Error>`
+
+Retrieves a room by its ID. Returns the room if found; otherwise, returns a `NotFound` error.
+
+`update_room(id: u64, payload: RoomPayload) -> Result<Room, Error>`
+
+Updates room details based on the provided payload. Returns the updated room if successful; otherwise, returns a` NotFound` error.
+
+`delete_room(id: u64) -> Result<Room, Error>`
+Deletes a room by its ID. Returns the deleted room if successful; otherwise, returns a `NotFound` error.
+
+## Reservation Functions 
+`create_reservation(payload: ReservationPayload) -> Result<Reservation, Error>`
+
+Creates a new reservation based on the provided payload. Validates the date range, checks availability, and creates the reservation if conditions are met. Returns the created reservation if successful; otherwise, returns an appropriate error.
+
+`get_reservation(id: u64) -> Result<Reservation, Error>`
+
+Retrieves a reservation by its ID. Returns the reservation if found; otherwise, returns a `NotFound` error.
+
+`update_room_availability(room_id: u64, is_available: bool) -> Result<(), Error>`
+
+Updates the availability of a room based on the  provided ID. Returns `Ok(())` if successful; otherwise, returns a `NotFound` error.
+
+
+`delete_reservation(id: u64) -> Result<Reservation, Error>`
+Deletes a reservation by its ID. Returns the deleted reservation if successful; otherwise, returns a `NotFound` error.
+
+## Guest Functions
+`create_guest(payload: GuestPayload) -> Option<Guest>`
+
+Creates a new guest based on the provided payload and adds it to the guest storage. Returns the created guest if successful.
+
+`get_guest(id: u64) -> Result<Guest, Error>`
+
+Retrieves a guest by their ID. Returns the guest if found; otherwise, returns a `NotFound` error.
+
+`get_all_guests() -> Result<Vec<Guest>, Error>`
+
+Retrieves all guests stored. Returns a vector of guests if there are any; otherwise, returns a `NotFound` error.
+
+`update_guest(id: u64, payload: GuestPayload) -> Result<Guest, Error>`
+
+Updates guest details based on the provided payload. Returns the updated guest if successful; otherwise, returns a `NotFound` error.
+
+`delete_guest(id: u64) -> Result<Guest, Error>`
+
+Deletes a guest by their ID. Returns the deleted guest if successful; otherwise, returns a `NotFound` error.
+
+## Error Handling 
+
+An `Error` enum is used to handle various error types, including `NotFound`, `RoomUnavailable`, `InvalidDateRange`, and `Overbooking`.
 
 Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
 
