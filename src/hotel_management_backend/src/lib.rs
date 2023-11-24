@@ -23,6 +23,7 @@ struct Room {
     availability: bool,
     created_at: u64,
     updated_at: Option<u64>,
+    price: f64,
 }
 
 // Implement Storable and BoundedStorable for Room...
@@ -78,6 +79,7 @@ struct Guest {
     name: String,
     email: String,
     created_at: u64,
+    preferred_room_type: String,
 }
 
 // Implement Storable and BoundedStorable for Guest...
@@ -158,6 +160,7 @@ fn create_room(payload: RoomPayload) -> Option<Room> {
         availability: payload.availability,
         created_at: time(),
         updated_at: None,
+        price: 100.0, // Assign a default value or calculate based on room_type
     };
     ROOM_STORAGE.with(|s| s.borrow_mut().insert(id, room.clone()));
     Some(room)
@@ -200,7 +203,56 @@ fn update_room(id: u64, payload: RoomPayload) -> Result<Room, Error> {
         }
     })
 }
+// Function to adjust room pricing
+#[ic_cdk::update]
+fn adjust_room_pricing() {
+    let current_time = time();
+    let mut updated_rooms = Vec::new();
 
+    // Retrieve and update room pricing
+    ROOM_STORAGE.with(|rooms| {
+        let rooms_borrow = rooms.borrow();
+        for (id, room) in rooms_borrow.iter() {
+            let mut updated_room = room.clone();
+            if is_peak_season(current_time) {
+                updated_room.price *= 1.10;
+            } else {
+                updated_room.price = calculate_base_price(&room.room_type);
+            }
+            updated_rooms.push((id, updated_room));
+        }
+    });
+
+    // Insert updated rooms back into storage
+    for (id, room) in updated_rooms {
+        ROOM_STORAGE.with(|rooms| {
+            rooms.borrow_mut().insert(id, room);
+        });
+    }
+}
+
+// Function to generate a timestamp from year, month, and day
+fn get_timestamp(month: u64, year: u64, day: u64) -> u64 {
+    year * 10000 + month * 100 + day
+}
+
+// Helper function to determine if it's peak season
+fn is_peak_season(current_time: u64) -> bool {
+    // Placeholder logic: define actual peak season dates
+    let peak_season_start = get_timestamp(6, 2023, 1); // Example: June
+    let peak_season_end = get_timestamp(8, 2023, 31);   // Example: August
+    current_time >= peak_season_start && current_time <= peak_season_end
+}
+
+// Helper function to calculate base price for a room type
+fn calculate_base_price(room_type: &str) -> f64 {
+    match room_type {
+        "Deluxe" => 200.0,
+        "Standard" => 100.0,
+        // Add more room types and their base prices
+        _ => 150.0, // Default price
+    }
+}
 // Function to delete room by Id
 #[ic_cdk::update]
 fn delete_room(id: u64) -> Result<Room, Error> {
@@ -332,6 +384,7 @@ fn delete_reservation(id: u64) -> Result<Reservation, Error> {
 struct GuestPayload {
     name: String,
     email: String,
+    preferred_room_type: String,
 }
 
 // Function to generate a new id 
@@ -352,11 +405,12 @@ fn create_guest(payload: GuestPayload) -> Option<Guest> {
         name: payload.name,
         email: payload.email,
         created_at: time(),
-        // Initialize other fields...
+        preferred_room_type: payload.preferred_room_type, // Use the value from payload
     };
     GUEST_STORAGE.with(|s| s.borrow_mut().insert(id, guest.clone()));
     Some(guest)
 }
+
 
 // Function to get guest by id
 #[ic_cdk::query]
@@ -382,7 +436,30 @@ fn get_all_guests() -> Result<Vec<Guest>, Error>{
     }
 }
 
+// Function to recommend rooms based on guest preferences
+#[ic_cdk::query]
+fn recommend_rooms_based_on_preferences(guest_id: u64) -> Result<Vec<Room>, Error> {
+    let preferred_room_type = GUEST_STORAGE.with(|guests| {
+        guests.borrow().get(&guest_id)
+            .map(|guest| guest.preferred_room_type.clone())
+            .unwrap_or_default()
+    });
 
+    if preferred_room_type.is_empty() {
+        return Err(Error::NotFound {
+            msg: format!("No preferences found for guest with id={}.", guest_id),
+        });
+    }
+
+    let recommended_rooms = ROOM_STORAGE.with(|rooms| {
+        rooms.borrow().iter()
+            .filter(|(_, room)| room.room_type == preferred_room_type && room.availability)
+            .map(|(_, room)| room.clone())
+            .collect::<Vec<Room>>()
+    });
+
+    Ok(recommended_rooms)
+}
 
 
 // Function to update the guest details
@@ -402,6 +479,8 @@ fn update_guest(id: u64, payload: GuestPayload) -> Result<Guest, Error> {
         }
     })
 }
+
+
 
 // Function to delete a guest 
 #[ic_cdk::update]
