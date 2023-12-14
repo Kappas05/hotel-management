@@ -9,8 +9,13 @@ type Guest = record {
   name : text;
   created_at : nat64;
   email : text;
+  preferred_room_type : text;
 };
-type GuestPayload = record { name : text; email : text };
+type GuestPayload = record {
+  name : text;
+  email : text;
+  preferred_room_type : text;
+};
 type Reservation = record {
   id : nat64;
   room_id : nat64;
@@ -29,7 +34,8 @@ type Result = variant { Ok : Reservation; Err : Error };
 type Result_1 = variant { Ok : Guest; Err : Error };
 type Result_2 = variant { Ok : Room; Err : Error };
 type Result_3 = variant { Ok : vec Guest; Err : Error };
-type Result_4 = variant { Ok; Err : Error };
+type Result_4 = variant { Ok : vec Room; Err : Error };
+type Result_5 = variant { Ok; Err : Error };
 type Room = record {
   id : nat64;
   updated_at : opt nat64;
@@ -37,6 +43,7 @@ type Room = record {
   created_at : nat64;
   availability : bool;
   room_number : text;
+  price : float64;
 };
 type RoomPayload = record {
   room_type : text;
@@ -44,6 +51,7 @@ type RoomPayload = record {
   room_number : text;
 };
 service : {
+  adjust_room_pricing : () -> ();
   create_guest : (GuestPayload) -> (opt Guest);
   create_reservation : (ReservationPayload) -> (Result);
   create_room : (RoomPayload) -> (opt Room);
@@ -54,7 +62,8 @@ service : {
   get_guest : (nat64) -> (Result_1) query;
   get_reservation : (nat64) -> (Result) query;
   get_room : (nat64) -> (Result_2) query;
+  recommend_rooms_based_on_preferences : (nat64) -> (Result_4) query;
   update_guest : (nat64, GuestPayload) -> (Result_1);
   update_room : (nat64, RoomPayload) -> (Result_2);
-  update_room_availability : (nat64, bool) -> (Result_4);
+  update_room_availability : (nat64, bool) -> (Result_5);
 }
